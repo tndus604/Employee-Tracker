@@ -38,6 +38,7 @@ function mainApp() {
             "View roles",
             "View employees",
             "View employees by manager",
+            "View total budget by department",
             new inquirer.Separator(),
             "Update employee roles",
             "Update employee manager",
@@ -76,6 +77,10 @@ function mainApp() {
 
         case "View employees by manager":
             viewByManager();
+            break;
+
+        case "View total budget by department":
+            viewBudget();
             break;
 
         case "Update employee roles":
@@ -380,6 +385,60 @@ function deleteRole() {
             },function (err, res) {
                 if (err) throw err;
                 console.log(res.affectedRows + " role has been deleted!\n");
+                mainApp();
+            })
+        })
+    })
+}
+
+function deleteEmployee () {
+    console.log("Selecting all employees...\n");
+    connection.query("SELECT * FROM employee",
+    function(err, res) {
+        if(err) throw err;
+        console.table(res);
+        inquirer.prompt(
+            {
+                name: "employeeID",
+                type: "input",
+                message: "What is the id of employee you want to delete?"
+            }
+        ).then (function(answer) {
+            console.log("Deleting role....\n");
+            connection.query("DELETE FROM employee WHERE ?", 
+            {
+                id: answer.employeeID
+            },
+            function (err, res) {
+                if (err) throw err;
+                console.log(res.affectedRows + " employee has been deleted!\n");
+                mainApp();
+        })
+    })
+    })
+};
+
+function viewBudget() {
+    connection.query("SELECT * FROM department", function(err, results) {
+        if (err) throw err;
+        console.table(results);
+        inquirer.prompt(
+            {
+                name: "departmentID",
+                type: "input",
+                message: "Enter the department's ID to see its budget"
+            }
+        ).then (function(answer) {
+            connection.query("SELECT * FROM role WHERE ?", 
+            {
+                department_id: answer.departmentID
+            },function (err, res) {
+                if (err) throw err;
+                let total = 0;
+                for (var i=0; i<res.length; i++) {
+                    total += res[i].salary;
+                }
+                console.log(total)
                 mainApp();
             })
         })
