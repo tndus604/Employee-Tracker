@@ -1,5 +1,6 @@
 var mysql = require("mysql");
 var inquirer = require("inquirer");
+const cTable = require('console.table');
 
 var connection = mysql.createConnection({
     host: "localhost",
@@ -36,6 +37,7 @@ function mainApp() {
             "View departments",
             "View roles",
             "View employees",
+            "View employees by manager",
             new inquirer.Separator(),
             "Update employee roles",
             "Update employee manager",
@@ -70,6 +72,10 @@ function mainApp() {
 
         case "View employees":
             viewEmployee();
+            break;
+
+        case "View employees by manager":
+            viewByManager();
             break;
 
         case "Update employee roles":
@@ -209,5 +215,173 @@ function addEmployee() {
 };
 
 function viewDepartment() {
-    console.log("Selecting from department...\n")
+    console.log("Selecting from department...\n");
+    connection.query("SELECT * FROM department",
+    function(err, res) {
+        if (err) throw err;
+        console.table(res);
+        mainApp();
+    }
+)};
+
+function viewRole() {
+    console.log("Selecting all roles....\n");
+    connection.query("SELECT * FROM role",
+    function(err, res) {
+        if(err) throw err;
+        console.table(res);
+        mainApp();
+    }
+)};
+
+function viewEmployee() {
+    console.log("Selecting all employees...\n");
+    connection.query("SELECT * FROM employee",
+    function(err, res) {
+        if(err) throw err;
+        console.table(res);
+        mainApp();
+    }
+)};
+
+function viewByManager() {
+    inquirer.prompt(
+        {
+            name: "managerID",
+            type: "input",
+            message: "View employees by manager: What is the manager's ID?"
+        }
+    ).then (function(answer) {
+        connection.query("SELECT * FROM employee WHERE ?", 
+        {
+            manager_id: answer.managerID
+        },
+        function(err, res) {
+            if (err) throw err;
+            console.table(res);
+            mainApp();
+        })
+    })
+}
+
+function updateEmployee() {
+    inquirer.prompt([
+        {
+            name: "firstName",
+            type: "input",
+            message: "What is the employee's first name you want to update?"
+        },
+        {
+            name: "roleID",
+            type: "input",
+            message: "What is the ID of the role you wish to update?"
+        }
+    ]).then(function(answer) {
+        connection.query("UPDATE employee SET ? WHERE ?",
+        [
+            {
+                role_id: answer.roleID
+            },
+            {
+                first_name: answer.firstName
+            }
+        ],
+        function(err,res) {
+            if(err) throw err;
+            console.log(res.affectedRows + " employee's role has been updated!\n");
+            mainApp();
+        }
+        );
+    });
+};
+
+function updateManager() {
+    inquirer.prompt([
+        {
+            name: "firstName",
+            type: "input",
+            message: "What is the employee's first name you wish to update?"
+        },
+        {
+            name: "managerID",
+            type: "input",
+            message: "What is the updated manager's ID?"
+        }
+    ]).then(function(answer) {
+        connection.query("UPDATE employee SET ? WHERE ?",
+        [
+            {
+                manager_id: answer.managerID
+            },
+            {
+                first_name: answer.firstName
+            }
+        ],
+        function(err,res) {
+            if(err) throw err;
+            console.log(res.affectedRows + " employee's manager has been updated!\n");
+            mainApp();
+        }
+        );
+    });
+}
+
+function deleteDepartment() {
+    connection.query("SELECT * FROM department", function(err, results) {
+        if (err) throw err;
+        inquirer.prompt(
+            {
+                name: "departmentName",
+                type: "list",
+                message: "Which department you wish to delete?",
+                choices: function() {
+                    var departArray = [];
+                    for (var i=0; i<results.length; i++) {
+                        departArray.push(results[i].name);
+                    }
+                    return departArray;
+                }
+            }
+        ).then (function(answer) {
+            console.log("Deleting department....\n");
+            connection.query("DELETE FROM department WHERE ?", 
+            {
+                name: answer.departmentName
+            },function (err, res) {
+                if (err) throw err;
+                console.log(res.affectedRows + " department has been deleted!\n");
+                mainApp();
+            })
+        })
+    })
+}
+
+function deleteRole() {
+    connection.query("SELECT * FROM role", function(err, results) {
+        if (err) throw err;
+        inquirer.prompt(
+            {
+                name: "title",
+                type: "list",
+                message: "Which role you wish to delete?",
+                choices: function() {
+                    var roleArray = [];
+                    for (var i=0; i<results.length; i++) {
+                        roleArray.push(results[i].title);
+                    }
+                    return roleArray;
+                }
+            }
+        ).then (function(answer) {
+            console.log("Deleting role....\n");
+            connection.query("DELETE FROM role WHERE ?", 
+            {
+                title: answer.title
+            },function (err, res) {
+                if (err) throw err;
+                console.log(res.affectedRows + " role has been deleted!\n");
+                mainApp();
+            })
+        })
+    })
 }
